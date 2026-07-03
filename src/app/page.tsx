@@ -129,11 +129,10 @@ export default function Home() {
                   key={option}
                   type="button"
                   onClick={() => setFilter(option)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    filter === option
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${filter === option
                       ? "bg-slate-950 text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
+                    }`}
                 >
                   {option}
                 </button>
@@ -154,22 +153,20 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => toggleTodo(todo.id)}
-                      className={`flex h-6 w-6 items-center justify-center rounded-full border transition ${
-                        todo.completed
+                      className={`flex h-6 w-6 items-center justify-center rounded-full border transition ${todo.completed
                           ? "border-emerald-500 bg-emerald-500 text-white"
                           : "border-slate-300 bg-white"
-                      }`}
+                        }`}
                       aria-label={todo.completed ? "Mark task incomplete" : "Mark task complete"}
                     >
                       {todo.completed ? "✓" : ""}
                     </button>
 
                     <span
-                      className={`flex-1 text-sm sm:text-base ${
-                        todo.completed
+                      className={`flex-1 text-sm sm:text-base ${todo.completed
                           ? "text-slate-400 line-through"
                           : "text-slate-800"
-                      }`}
+                        }`}
                     >
                       {todo.text}
                     </span>
