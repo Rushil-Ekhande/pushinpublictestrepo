@@ -12,6 +12,14 @@ type DeletedTodo = Todo & {
   deletedAt: number; // timestamp when deleted
 };
 
+type ModalConfig = {
+  isOpen: boolean;
+  title: string;
+  description: string;
+  confirmText: string;
+  onConfirm: () => void;
+};
+
 const initialTodos: Todo[] = [
   { id: 1, text: "Sketch the next feature", completed: true },
   { id: 2, text: "Ship the landing page", completed: false },
@@ -27,6 +35,7 @@ export default function Home() {
   const [editingTodoId, setEditingTodoId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [now, setNow] = useState<number>(0);
+  const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -174,18 +183,27 @@ export default function Home() {
     );
   }
 
-  function removeTodo(id: number) {
-    const todoToDelete = todos.find((todo) => todo.id === id);
-    if (todoToDelete) {
-      setDeletedTodos((current) => [
-        {
-          ...todoToDelete,
-          deletedAt: Date.now(),
-        },
-        ...current,
-      ]);
-    }
-    setTodos((currentTodos) => currentTodos.filter((todo) => todo.id !== id));
+  function confirmRemoveTodo(id: number, text: string) {
+    setModalConfig({
+      isOpen: true,
+      title: "Delete Task?",
+      description: `"${text}" will be moved to the Recently Deleted list. You can restore it anytime within the next 24 hours.`,
+      confirmText: "Delete",
+      onConfirm: () => {
+        const todoToDelete = todos.find((todo) => todo.id === id);
+        if (todoToDelete) {
+          setDeletedTodos((current) => [
+            {
+              ...todoToDelete,
+              deletedAt: Date.now(),
+            },
+            ...current,
+          ]);
+        }
+        setTodos((currentTodos) => currentTodos.filter((todo) => todo.id !== id));
+        setModalConfig(null);
+      },
+    });
   }
 
   function restoreTodo(id: number) {
@@ -201,20 +219,30 @@ export default function Home() {
     }
   }
 
-  function permanentlyDeleteTodo(id: number) {
-    if (window.confirm("Permanently delete this task? This cannot be undone.")) {
-      setDeletedTodos((current) => current.filter((todo) => todo.id !== id));
-    }
+  function confirmPermanentlyDeleteTodo(id: number, text: string) {
+    setModalConfig({
+      isOpen: true,
+      title: "Permanently Delete Task?",
+      description: `"${text}" will be deleted forever. This action cannot be undone.`,
+      confirmText: "Delete Permanently",
+      onConfirm: () => {
+        setDeletedTodos((current) => current.filter((todo) => todo.id !== id));
+        setModalConfig(null);
+      },
+    });
   }
 
-  function clearAllDeletedTodos() {
-    if (
-      window.confirm(
-        "Are you sure you want to permanently delete all recently deleted tasks?"
-      )
-    ) {
-      setDeletedTodos([]);
-    }
+  function confirmClearAllDeletedTodos() {
+    setModalConfig({
+      isOpen: true,
+      title: "Clear Recently Deleted?",
+      description: "Are you sure you want to permanently delete all recently deleted tasks? This action cannot be undone.",
+      confirmText: "Clear All",
+      onConfirm: () => {
+        setDeletedTodos([]);
+        setModalConfig(null);
+      },
+    });
   }
 
   function startEditing(todo: Todo) {
@@ -408,7 +436,7 @@ export default function Home() {
 
                           <button
                             type="button"
-                            onClick={() => removeTodo(todo.id)}
+                            onClick={() => confirmRemoveTodo(todo.id, todo.text)}
                             className="rounded-full px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-red-50 hover:text-red-600 cursor-pointer"
                           >
                             Delete
@@ -451,7 +479,7 @@ export default function Home() {
               </div>
               {isMounted && deletedTodos.length > 0 && (
                 <button
-                  onClick={clearAllDeletedTodos}
+                  onClick={confirmClearAllDeletedTodos}
                   className="text-xs font-semibold text-red-600 hover:text-red-700 transition hover:underline cursor-pointer"
                 >
                   Clear all
@@ -526,7 +554,7 @@ export default function Home() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => permanentlyDeleteTodo(todo.id)}
+                            onClick={() => confirmPermanentlyDeleteTodo(todo.id, todo.text)}
                             title="Delete permanently"
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
                           >
@@ -555,6 +583,66 @@ export default function Home() {
           </section>
         </aside>
       </div>
+
+      {/* Confirmation Modal */}
+      {modalConfig && modalConfig.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+            onClick={() => setModalConfig(null)}
+          />
+
+          {/* Modal Content Card */}
+          <div className="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 text-left shadow-2xl transition-all duration-300 animate-scale-up border border-slate-100">
+            <div className="flex items-start gap-4">
+              {/* Alert Indicator */}
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="h-6 w-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                  />
+                </svg>
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <h3 className="text-lg font-semibold text-slate-900 leading-6">
+                  {modalConfig.title}
+                </h3>
+                <p className="text-sm text-slate-500 leading-normal">
+                  {modalConfig.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setModalConfig(null)}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={modalConfig.onConfirm}
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 transition cursor-pointer"
+              >
+                {modalConfig.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
